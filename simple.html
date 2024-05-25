@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Olearia - dead-simple mode</title>
+    <link rel="stylesheet" href="simple.css">
+    <style>
+        .row {
+            display: grid;
+            grid-template-columns: 20% 80%;
+        }
+        main, aside {
+            padding: 5px;
+        }
+        main {
+            /*height: 200vh;*/
+            min-height: 1000px;
+            display: flex;
+        }
+        aside {
+            height: calc(100vh - 10px);
+            overflow-y: scroll;
+            position: -webkit-sticky;
+            position: sticky;
+            top: 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="row">
+    <aside>
+        <div id="controls">
+            Upload single content file (the <code>.xml</code>): <input type="file" id="txtUpload">
+        </div>
+        <h2>Table of contents</h2>
+        <div id="toc"></div>
+    </aside>
+    <main>
+        <div id="content"></div>
+    </main>
+</div>
+    <script>
+        document.getElementById('txtUpload').addEventListener('change', function(e) {
+            let file = e.target.files[0];
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                let content = e.target.result;
+                let parser = new DOMParser();
+                let doc = parser.parseFromString(content, 'application/xml');
+                let contentDiv = document.getElementById('content');
+                contentDiv.innerHTML = '';
+                contentDiv.appendChild(doc.documentElement);
+                TOCFromContext();
+            };
+            reader.readAsText(file);
+        });
+
+        function TOCFromContext() {
+            let contentDiv = document.getElementById('content');
+            let tocDiv = document.getElementById('toc');
+            tocDiv.innerHTML = '';
+            let headings = contentDiv.querySelectorAll('h1, h2, h3, h4, h5, h6');
+            let toc = document.createElement('ul');
+            tocDiv.appendChild(toc);
+            for (let i = 0; i < headings.length; i++) {
+                let heading = headings[i];
+                let level = parseInt(heading.tagName[1]);
+                let li = document.createElement('li');
+                let a = document.createElement('a');
+                a.href = '#' + heading.id;
+                a.textContent = heading.textContent;
+                li.appendChild(a);
+                if (level == 1) {
+                    toc.appendChild(li);
+                } else {
+                    let parent = toc;
+                    for (let j = 1; j < level; j++) {
+                        let lastChild = parent.lastChild;
+                        if (lastChild.tagName == 'UL') {
+                            parent = lastChild;
+                        } else {
+                            let ul = document.createElement('ul');
+                            parent.appendChild(ul);
+                            parent = ul;
+                        }
+                    }
+                    parent.appendChild(li);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
